@@ -7,6 +7,7 @@ import FormulasView from "../views/FormulasView.vue";
 import HerbsView from "../views/HerbsView.vue";
 import InventoryView from "../views/InventoryView.vue";
 import LoginView from "../views/LoginView.vue";
+import UsersView from "../views/UsersView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -49,6 +50,12 @@ const router = createRouter({
           name: "inventory",
           component: InventoryView,
           meta: { auth: true, permission: "inventory.view" },
+        },
+        {
+          path: "users",
+          name: "users",
+          component: UsersView,
+          meta: { auth: true, permission: "user.view" },
         },
       ],
     },

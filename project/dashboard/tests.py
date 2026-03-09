@@ -13,7 +13,7 @@ class IntegrationFlowTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_model = get_user_model()
-        cls.role = Role.objects.create(role_name="集成测试角色", role_code="integrator", status=True)
+        cls.role = Role.objects.create(role_name="Integrator", role_code="integrator", status=True)
         for code in [
             "dashboard.view",
             "herb.view",
@@ -21,6 +21,7 @@ class IntegrationFlowTestCase(TestCase):
             "inventory.view",
             "inventory.inbound",
             "inventory.outbound",
+            "user.view",
         ]:
             perm = PermissionEntry.objects.create(
                 permission_name=code,
@@ -55,8 +56,8 @@ class IntegrationFlowTestCase(TestCase):
             "/api/herbs/",
             {
                 "herb_code": "HINT1",
-                "herb_name": "集成测试药材",
-                "category": "测试类",
+                "herb_name": "Integration Herb",
+                "category": "Test",
                 "unit": "kg",
                 "status": "enabled",
             },

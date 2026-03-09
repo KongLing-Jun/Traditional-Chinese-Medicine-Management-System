@@ -18,8 +18,8 @@ function go(path) {
   router.push(path);
 }
 
-function logout() {
-  auth.logout();
+async function logout() {
+  await auth.logoutRemote();
   router.push({ name: "login" });
 }
 </script>
@@ -30,10 +30,11 @@ function logout() {
       <div class="brand">
         <div class="brand-mark">TCM</div>
         <div>
-          <div class="brand-title">中医药管理系统</div>
-          <div class="brand-sub">Vue3 + Django</div>
+          <div class="brand-title">TCM Management</div>
+          <div class="brand-sub">Vue3 + Django API</div>
         </div>
       </div>
+
       <nav class="menu">
         <button
           v-for="item in menuItems"
@@ -45,17 +46,18 @@ function logout() {
           {{ item.label }}
         </button>
       </nav>
+
       <div class="user-box">
         <div class="user-name">{{ auth.user?.real_name || auth.user?.username }}</div>
-        <div class="user-role">{{ auth.user?.role_name || "未分配角色" }}</div>
-        <button class="btn btn-muted" @click="logout">退出登录</button>
+        <div class="user-role">{{ auth.user?.role_name || "No role assigned" }}</div>
+        <button class="btn btn-muted" @click="logout">Logout</button>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar card">
         <div class="topbar-title">{{ route.name }}</div>
-        <div class="topbar-tip">当前账号权限数量：{{ auth.permissions.length }}</div>
+        <div class="topbar-tip">Permissions: {{ auth.permissions.length }}</div>
       </header>
       <section class="content">
         <RouterView />

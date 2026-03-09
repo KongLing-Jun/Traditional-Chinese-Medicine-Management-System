@@ -2,8 +2,15 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenVerifyView
 
-from accounts.api import AccessAPIView, PermissionEntryViewSet, ProfileAPIView, RoleViewSet, UserViewSet
-from accounts.jwt_api import JWTLoginAPIView, JWTRefreshAPIView
+from accounts.api import (
+    AccessAPIView,
+    OperationLogViewSet,
+    PermissionEntryViewSet,
+    ProfileAPIView,
+    RoleViewSet,
+    UserViewSet,
+)
+from accounts.jwt_api import JWTLoginAPIView, JWTLogoutAPIView, JWTRefreshAPIView
 from formulas.api import FormulaViewSet
 from herbs.api import HerbViewSet
 from inventory.api import (
@@ -19,6 +26,7 @@ router = DefaultRouter()
 router.register("users", UserViewSet)
 router.register("roles", RoleViewSet)
 router.register("permissions", PermissionEntryViewSet)
+router.register("logs", OperationLogViewSet, basename="operation-log")
 router.register("herbs", HerbViewSet)
 router.register("formulas", FormulaViewSet)
 router.register("inventory/stocks", InventoryStockViewSet, basename="inventory-stock")
@@ -27,6 +35,7 @@ router.register("inventory/warnings", InventoryWarningViewSet, basename="invento
 
 urlpatterns = [
     path("auth/login/", JWTLoginAPIView.as_view(), name="api-auth-login"),
+    path("auth/logout/", JWTLogoutAPIView.as_view(), name="api-auth-logout"),
     path("auth/refresh/", JWTRefreshAPIView.as_view(), name="api-auth-refresh"),
     path("auth/verify/", TokenVerifyView.as_view(), name="api-auth-verify"),
     path("", include(router.urls)),

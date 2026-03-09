@@ -1,6 +1,7 @@
 from rest_framework import permissions, serializers, viewsets
 
 from accounts.api_permissions import RBACPermission
+from accounts.services import log_operation
 
 from .models import Herb
 
@@ -45,3 +46,34 @@ class HerbViewSet(viewsets.ModelViewSet):
         "partial_update": "herb.update",
         "destroy": "herb.delete",
     }
+
+    def perform_create(self, serializer):
+        herb = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="herb",
+            operation_type="create",
+            request=self.request,
+            request_param=f"herb_id={herb.id}",
+        )
+
+    def perform_update(self, serializer):
+        herb = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="herb",
+            operation_type="update",
+            request=self.request,
+            request_param=f"herb_id={herb.id}",
+        )
+
+    def perform_destroy(self, instance):
+        herb_id = instance.id
+        instance.delete()
+        log_operation(
+            user=self.request.user,
+            module_name="herb",
+            operation_type="delete",
+            request=self.request,
+            request_param=f"herb_id={herb_id}",
+        )

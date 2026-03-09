@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import permissions, serializers, viewsets
 
 from accounts.api_permissions import RBACPermission
+from accounts.services import log_operation
 
 from .models import Formula, FormulaItem
 
@@ -90,3 +91,34 @@ class FormulaViewSet(viewsets.ModelViewSet):
         "partial_update": "formula.update",
         "destroy": "formula.delete",
     }
+
+    def perform_create(self, serializer):
+        formula = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="formula",
+            operation_type="create",
+            request=self.request,
+            request_param=f"formula_id={formula.id}",
+        )
+
+    def perform_update(self, serializer):
+        formula = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="formula",
+            operation_type="update",
+            request=self.request,
+            request_param=f"formula_id={formula.id}",
+        )
+
+    def perform_destroy(self, instance):
+        formula_id = instance.id
+        instance.delete()
+        log_operation(
+            user=self.request.user,
+            module_name="formula",
+            operation_type="delete",
+            request=self.request,
+            request_param=f"formula_id={formula_id}",
+        )

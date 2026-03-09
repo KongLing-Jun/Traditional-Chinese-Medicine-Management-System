@@ -33,6 +33,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -135,6 +136,26 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
 }
 
-frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://127.0.0.1:5173")
-CORS_ALLOWED_ORIGINS = [frontend_origin, "http://localhost:5173"]
+def _parse_csv_env(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _default_frontend_origins() -> list[str]:
+    # Vite may auto-switch ports when 5173 is occupied.
+    ports = range(5173, 5181)
+    origins = []
+    for port in ports:
+        origins.append(f"http://localhost:{port}")
+        origins.append(f"http://127.0.0.1:{port}")
+    return origins
+
+
+frontend_origins = sorted(
+    set(_default_frontend_origins() + _parse_csv_env(os.getenv("FRONTEND_ORIGINS", "")))
+)
+
+CORS_ALLOWED_ORIGINS = frontend_origins
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^http://localhost:\d+$", r"^http://127\.0\.0\.1:\d+$"]
+CORS_ALLOW_ALL_ORIGINS = os.getenv("CORS_ALLOW_ALL_ORIGINS", "1" if DEBUG else "0") == "1"
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = frontend_origins

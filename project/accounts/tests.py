@@ -2,15 +2,19 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from accounts.models import PermissionEntry, Role
+from accounts.models import OperationLog, PermissionEntry, Role
 
 
 class AuthAndRBACTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_model = get_user_model()
-        cls.admin_role = Role.objects.create(role_name="管理员", role_code="admin", status=True)
-        cls.pharmacist_role = Role.objects.create(role_name="药剂师", role_code="pharmacist", status=True)
+        cls.admin_role = Role.objects.create(role_name="Admin", role_code="admin", status=True)
+        cls.pharmacist_role = Role.objects.create(
+            role_name="Pharmacist",
+            role_code="pharmacist",
+            status=True,
+        )
 
         permission_codes = [
             "dashboard.view",
@@ -23,6 +27,7 @@ class AuthAndRBACTestCase(TestCase):
             "user.delete",
             "role.view",
             "permission.view",
+            "log.view",
         ]
         cls.permissions = {}
         for code in permission_codes:
@@ -67,6 +72,9 @@ class AuthAndRBACTestCase(TestCase):
         self.assertIn("access", response.data)
         self.assertIn("refresh", response.data)
         self.assertIn("user", response.data)
+        self.assertTrue(
+            OperationLog.objects.filter(module_name="auth", operation_type="login").exists()
+        )
 
     def test_jwt_login_failure(self):
         response = self.client.post(
@@ -77,6 +85,14 @@ class AuthAndRBACTestCase(TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertIn("message", response.data)
         self.assertIn("errors", response.data)
+
+    def test_jwt_logout_success(self):
+        self.client.force_authenticate(self.admin_user)
+        response = self.client.post("/api/auth/logout/", {}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            OperationLog.objects.filter(module_name="auth", operation_type="logout").exists()
+        )
 
     def test_rbac_forbid_user_create_for_pharmacist(self):
         self.client.force_authenticate(self.pharmacist_user)
@@ -94,7 +110,7 @@ class AuthAndRBACTestCase(TestCase):
             {
                 "username": "normal_user",
                 "password": "normal123456",
-                "real_name": "普通用户",
+                "real_name": "General User",
                 "is_active": True,
             },
             format="json",

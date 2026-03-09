@@ -38,7 +38,7 @@ async function fetchDashboard() {
     stats.value.warningCount = totalFrom(warnings.data);
     records.value = listFrom(recordRows.data).slice(0, 8);
   } catch (error) {
-    errorText.value = extractErrorMessage(error, "无法加载仪表盘数据。");
+    errorText.value = extractErrorMessage(error, "Failed to load dashboard.");
   } finally {
     loading.value = false;
   }
@@ -50,41 +50,41 @@ onMounted(fetchDashboard);
 <template>
   <div class="view-grid">
     <div class="card">
-      <h2>仪表盘概览</h2>
-      <p class="muted">查看药材、方剂与库存预警实时状态。</p>
+      <h2>Dashboard Overview</h2>
+      <p class="muted">Live status of herbs, formulas, stock, and warnings.</p>
       <p v-if="errorText" class="error-text">{{ errorText }}</p>
       <div class="kpi-grid">
         <article class="kpi">
-          <span>药材总数</span>
+          <span>Total Herbs</span>
           <strong>{{ stats.herbCount }}</strong>
         </article>
         <article class="kpi">
-          <span>方剂总数</span>
+          <span>Total Formulas</span>
           <strong>{{ stats.formulaCount }}</strong>
         </article>
         <article class="kpi">
-          <span>库存项</span>
+          <span>Stock Items</span>
           <strong>{{ stats.stockCount }}</strong>
         </article>
         <article class="kpi warn">
-          <span>低库存预警</span>
+          <span>Active Warnings</span>
           <strong>{{ stats.warningCount }}</strong>
         </article>
       </div>
       <button class="btn btn-muted" @click="fetchDashboard" :disabled="loading">
-        {{ loading ? "刷新中..." : "刷新数据" }}
+        {{ loading ? "Refreshing..." : "Refresh Data" }}
       </button>
     </div>
 
     <div class="card">
-      <h2>最近库存流水</h2>
+      <h2>Recent Inventory Records</h2>
       <table class="table">
         <thead>
           <tr>
-            <th>时间</th>
-            <th>药材</th>
-            <th>类型</th>
-            <th>变化量</th>
+            <th>Time</th>
+            <th>Herb</th>
+            <th>Type</th>
+            <th>Qty</th>
           </tr>
         </thead>
         <tbody>

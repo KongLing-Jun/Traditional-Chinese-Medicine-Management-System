@@ -62,6 +62,11 @@ h3 {
   border: 1px solid #dae7db;
 }
 
+.btn-danger {
+  color: #fff;
+  background: #d63c3c;
+}
+
 .muted {
   color: var(--subtle);
 }
@@ -106,6 +111,17 @@ select {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid #ced8ce;
+  background: #fbfffb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  min-height: 84px;
+  resize: vertical;
 }
 
 .shell {
@@ -280,6 +296,12 @@ select {
   vertical-align: top;
 }
 
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .formula-list {
   display: grid;
   gap: 12px;
@@ -309,6 +331,13 @@ select {
   color: #bf2626;
 }
 
+.compose-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
 @media (max-width: 960px) {
   .shell {
     grid-template-columns: 1fr;
@@ -320,5 +349,8 @@ select {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
+  }
+  .compose-row {
+    grid-template-columns: 1fr;
   }
 }

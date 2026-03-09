@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.api_permissions import RBACPermission
+from accounts.services import log_operation
 from herbs.models import Herb
 
 from .models import InventoryRecord, InventoryStock, InventoryWarning
@@ -103,6 +104,37 @@ class InventoryStockViewSet(viewsets.ModelViewSet):
         "destroy": "inventory.update",
     }
 
+    def perform_create(self, serializer):
+        stock = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="inventory",
+            operation_type="stock_create",
+            request=self.request,
+            request_param=f"stock_id={stock.id}",
+        )
+
+    def perform_update(self, serializer):
+        stock = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="inventory",
+            operation_type="stock_update",
+            request=self.request,
+            request_param=f"stock_id={stock.id}",
+        )
+
+    def perform_destroy(self, instance):
+        stock_id = instance.id
+        instance.delete()
+        log_operation(
+            user=self.request.user,
+            module_name="inventory",
+            operation_type="stock_delete",
+            request=self.request,
+            request_param=f"stock_id={stock_id}",
+        )
+
 
 class InventoryRecordViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = InventoryRecord.objects.select_related("herb", "operator").all()
@@ -137,6 +169,13 @@ class InventoryInboundAPIView(APIView):
             )
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)}) from exc
+        log_operation(
+            user=request.user,
+            module_name="inventory",
+            operation_type="inbound",
+            request=request,
+            request_param=f"record_id={record.id}, herb_id={record.herb_id}, quantity={record.quantity}",
+        )
         return Response(InventoryRecordSerializer(record).data, status=status.HTTP_201_CREATED)
 
 
@@ -156,6 +195,13 @@ class InventoryOutboundAPIView(APIView):
             )
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)}) from exc
+        log_operation(
+            user=request.user,
+            module_name="inventory",
+            operation_type="outbound",
+            request=request,
+            request_param=f"record_id={record.id}, herb_id={record.herb_id}, quantity={record.quantity}",
+        )
         return Response(InventoryRecordSerializer(record).data, status=status.HTTP_201_CREATED)
 
 
@@ -175,4 +221,11 @@ class InventoryCheckAPIView(APIView):
             )
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)}) from exc
+        log_operation(
+            user=request.user,
+            module_name="inventory",
+            operation_type="check",
+            request=request,
+            request_param=f"record_id={record.id}, herb_id={record.herb_id}, quantity={record.quantity}",
+        )
         return Response(InventoryRecordSerializer(record).data, status=status.HTTP_201_CREATED)

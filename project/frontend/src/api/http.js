@@ -2,9 +2,11 @@ import axios from "axios";
 
 const ACCESS_TOKEN_KEY = "tcm_access_token";
 const REFRESH_TOKEN_KEY = "tcm_refresh_token";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").trim();
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "",
+  // Default to same-origin so Vite proxy handles /api in development.
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 
@@ -30,10 +32,9 @@ http.interceptors.response.use(
 
       originalRequest.__retried = true;
       try {
-        const refreshResponse = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL || ""}/api/auth/refresh/`,
-          { refresh: refreshToken },
-        );
+        const refreshResponse = await axios.post(`${API_BASE_URL}/api/auth/refresh/`, {
+          refresh: refreshToken,
+        });
         const nextAccess = refreshResponse.data?.access;
         const nextRefresh = refreshResponse.data?.refresh;
         if (!nextAccess) {
@@ -56,7 +57,7 @@ http.interceptors.response.use(
   },
 );
 
-export function extractErrorMessage(error, fallback = "请求失败，请稍后重试。") {
+export function extractErrorMessage(error, fallback = "Request failed. Please retry later.") {
   const payload = error?.response?.data;
   if (payload?.message) return payload.message;
   if (payload?.detail) return payload.detail;

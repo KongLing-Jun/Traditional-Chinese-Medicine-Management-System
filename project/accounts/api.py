@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .api_permissions import RBACPermission
-from .models import PermissionEntry, Role, User
+from .models import OperationLog, PermissionEntry, Role, User
 from .navigation import build_visible_menu
+from .services import log_operation
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -60,6 +61,26 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class OperationLogSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source="user.display_name", read_only=True)
+
+    class Meta:
+        model = OperationLog
+        fields = [
+            "id",
+            "user",
+            "user_name",
+            "module_name",
+            "operation_type",
+            "request_method",
+            "request_url",
+            "request_param",
+            "operation_result",
+            "ip_address",
+            "created_at",
+        ]
+
+
 class RoleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
@@ -88,6 +109,47 @@ class UserViewSet(viewsets.ModelViewSet):
         "partial_update": "user.update",
         "destroy": "user.delete",
     }
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="user",
+            operation_type="create",
+            request=self.request,
+            request_param=f"user_id={user.id}",
+        )
+
+    def perform_update(self, serializer):
+        user = serializer.save()
+        log_operation(
+            user=self.request.user,
+            module_name="user",
+            operation_type="update",
+            request=self.request,
+            request_param=f"user_id={user.id}",
+        )
+
+    def perform_destroy(self, instance):
+        user_id = instance.id
+        instance.delete()
+        log_operation(
+            user=self.request.user,
+            module_name="user",
+            operation_type="delete",
+            request=self.request,
+            request_param=f"user_id={user_id}",
+        )
+
+
+class OperationLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = OperationLog.objects.select_related("user").all()
+    serializer_class = OperationLogSerializer
+    permission_classes = [permissions.IsAuthenticated, RBACPermission]
+    filterset_fields = ["module_name", "operation_type", "operation_result", "user"]
+    search_fields = ["module_name", "operation_type", "request_url", "request_param", "ip_address"]
+    ordering_fields = ["created_at"]
+    permission_code_map = {"GET": "log.view"}
 
 
 class ProfileAPIView(APIView):

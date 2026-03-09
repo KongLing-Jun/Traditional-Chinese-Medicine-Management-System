@@ -46,11 +46,19 @@ export const useAuthStore = defineStore("auth", () => {
     return permissions.value.includes(permissionCode);
   }
 
-  function logout() {
-    setTokens("", "");
-    user.value = null;
-    permissions.value = [];
-    menu.value = [];
+  async function logoutRemote() {
+    try {
+      if (isAuthenticated.value) {
+        await http.post("/api/auth/logout/");
+      }
+    } catch {
+      // Ignore logout endpoint failures and clear local auth state.
+    } finally {
+      setTokens("", "");
+      user.value = null;
+      permissions.value = [];
+      menu.value = [];
+    }
   }
 
   async function safeBootstrap() {
@@ -58,8 +66,8 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       await fetchAccess();
     } catch (error) {
-      const message = extractErrorMessage(error, "登录信息已过期，请重新登录。");
-      logout();
+      const message = extractErrorMessage(error, "Session expired. Please login again.");
+      await logoutRemote();
       throw new Error(message);
     }
   }
@@ -72,8 +80,8 @@ export const useAuthStore = defineStore("auth", () => {
     menu,
     isAuthenticated,
     login,
-    logout,
     hasPermission,
     safeBootstrap,
+    logoutRemote,
   };
 });

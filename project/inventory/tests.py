@@ -13,7 +13,11 @@ class InventoryWorkflowTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_model = get_user_model()
-        cls.role = Role.objects.create(role_name="库存管理员", role_code="inventory_admin", status=True)
+        cls.role = Role.objects.create(
+            role_name="Inventory Admin",
+            role_code="inventory_admin",
+            status=True,
+        )
         for code in [
             "inventory.view",
             "inventory.inbound",
@@ -37,8 +41,8 @@ class InventoryWorkflowTestCase(TestCase):
 
         cls.herb = Herb.objects.create(
             herb_code="H900",
-            herb_name="测试药材",
-            category="测试类",
+            herb_name="Test Herb",
+            category="Test Category",
             unit="kg",
             status=Herb.STATUS_ENABLED,
         )
@@ -108,6 +112,7 @@ class InventoryWorkflowTestCase(TestCase):
         self.assertEqual(self.stock.stock_status, InventoryStock.STATUS_LOW)
         self.assertTrue(
             InventoryWarning.objects.filter(
-                herb=self.herb, warning_status=InventoryWarning.STATUS_ACTIVE
+                herb=self.herb,
+                warning_status=InventoryWarning.STATUS_ACTIVE,
             ).exists()
         )

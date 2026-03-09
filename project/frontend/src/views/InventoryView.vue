@@ -8,12 +8,18 @@ const submitting = ref(false);
 const errorText = ref("");
 const stocks = ref([]);
 const warnings = ref([]);
+const records = ref([]);
 
 const actionForm = reactive({
   herb_id: "",
   quantity: "",
   type: "inbound",
   remark: "",
+});
+
+const recordFilters = reactive({
+  record_type: "",
+  herb: "",
 });
 
 function listFrom(payload) {
@@ -33,10 +39,26 @@ async function fetchInventory() {
     if (!actionForm.herb_id && stocks.value.length > 0) {
       actionForm.herb_id = String(stocks.value[0].herb);
     }
+    if (!recordFilters.herb && stocks.value.length > 0) {
+      recordFilters.herb = String(stocks.value[0].herb);
+    }
   } catch (error) {
-    errorText.value = extractErrorMessage(error, "无法加载库存数据。");
+    errorText.value = extractErrorMessage(error, "Failed to load inventory.");
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchRecords() {
+  try {
+    const params = new URLSearchParams();
+    if (recordFilters.record_type) params.set("record_type", recordFilters.record_type);
+    if (recordFilters.herb) params.set("herb", recordFilters.herb);
+    const query = params.toString();
+    const response = await http.get(`/api/inventory/records/${query ? `?${query}` : ""}`);
+    records.value = listFrom(response.data);
+  } catch (error) {
+    errorText.value = extractErrorMessage(error, "Failed to load inventory records.");
   }
 }
 
@@ -44,24 +66,37 @@ async function submitAction() {
   submitting.value = true;
   errorText.value = "";
   try {
-    const endpoint =
-      actionForm.type === "inbound" ? "/api/inventory/inbound/" : "/api/inventory/outbound/";
-    await http.post(endpoint, {
+    let endpoint = "/api/inventory/inbound/";
+    let payload = {
       herb_id: actionForm.herb_id,
       quantity: actionForm.quantity,
       remark: actionForm.remark,
-    });
+    };
+    if (actionForm.type === "outbound") {
+      endpoint = "/api/inventory/outbound/";
+    } else if (actionForm.type === "check") {
+      endpoint = "/api/inventory/check/";
+      payload = {
+        herb_id: actionForm.herb_id,
+        checked_quantity: actionForm.quantity,
+        remark: actionForm.remark,
+      };
+    }
+    await http.post(endpoint, payload);
     actionForm.quantity = "";
     actionForm.remark = "";
-    await fetchInventory();
+    await Promise.all([fetchInventory(), fetchRecords()]);
   } catch (error) {
-    errorText.value = extractErrorMessage(error, "库存操作失败。");
+    errorText.value = extractErrorMessage(error, "Inventory action failed.");
   } finally {
     submitting.value = false;
   }
 }
 
-onMounted(fetchInventory);
+onMounted(async () => {
+  await fetchInventory();
+  await fetchRecords();
+});
 </script>
 
 <template>
@@ -69,22 +104,22 @@ onMounted(fetchInventory);
     <div class="card">
       <div class="toolbar">
         <div>
-          <h2>库存管理</h2>
-          <p class="muted">维护当前库存、低库存预警与流水操作。</p>
+          <h2>Inventory Management</h2>
+          <p class="muted">Track stock levels, warnings, and inbound/outbound/check actions.</p>
         </div>
         <button class="btn btn-muted" @click="fetchInventory" :disabled="loading">
-          {{ loading ? "刷新中..." : "刷新" }}
+          {{ loading ? "Refreshing..." : "Refresh" }}
         </button>
       </div>
       <p v-if="errorText" class="error-text">{{ errorText }}</p>
       <table class="table">
         <thead>
           <tr>
-            <th>药材</th>
-            <th>当前库存</th>
-            <th>安全库存</th>
-            <th>仓位</th>
-            <th>状态</th>
+            <th>Herb</th>
+            <th>Current</th>
+            <th>Safe</th>
+            <th>Location</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -100,17 +135,18 @@ onMounted(fetchInventory);
     </div>
 
     <div class="card">
-      <h2>快捷入库/出库</h2>
+      <h2>Stock Action</h2>
       <form class="inventory-form" @submit.prevent="submitAction">
         <label>
-          <span>类型</span>
+          <span>Action Type</span>
           <select v-model="actionForm.type">
-            <option value="inbound">入库</option>
-            <option value="outbound">出库</option>
+            <option value="inbound">Inbound</option>
+            <option value="outbound">Outbound</option>
+            <option value="check">Stock Check</option>
           </select>
         </label>
         <label>
-          <span>药材</span>
+          <span>Herb</span>
           <select v-model="actionForm.herb_id">
             <option v-for="item in stocks" :key="item.herb" :value="String(item.herb)">
               {{ item.herb_name }} ({{ item.herb_code }})
@@ -118,25 +154,71 @@ onMounted(fetchInventory);
           </select>
         </label>
         <label>
-          <span>数量</span>
+          <span>{{ actionForm.type === "check" ? "Checked Quantity" : "Quantity" }}</span>
           <input v-model.trim="actionForm.quantity" type="number" min="0.01" step="0.01" required />
         </label>
         <label>
-          <span>备注</span>
+          <span>Remark</span>
           <input v-model.trim="actionForm.remark" />
         </label>
         <button class="btn btn-primary" type="submit" :disabled="submitting || !actionForm.herb_id">
-          {{ submitting ? "提交中..." : "提交操作" }}
+          {{ submitting ? "Submitting..." : "Submit" }}
         </button>
       </form>
 
-      <h3>低库存预警</h3>
+      <h3>Active Low-Stock Warnings</h3>
       <ul class="warning-list">
         <li v-for="item in warnings" :key="item.id">
-          {{ item.herb_name }}: 当前 {{ item.current_quantity }} / 安全 {{ item.safe_quantity }}
+          {{ item.herb_name }}: current {{ item.current_quantity }} / safe {{ item.safe_quantity }}
         </li>
-        <li v-if="warnings.length === 0">暂无低库存预警</li>
+        <li v-if="warnings.length === 0">No active warnings.</li>
       </ul>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>Inventory Records</h2>
+        <div class="toolbar-right">
+          <select v-model="recordFilters.record_type">
+            <option value="">All types</option>
+            <option value="inbound">Inbound</option>
+            <option value="outbound">Outbound</option>
+            <option value="check">Check</option>
+          </select>
+          <select v-model="recordFilters.herb">
+            <option value="">All herbs</option>
+            <option v-for="item in stocks" :key="item.herb" :value="String(item.herb)">
+              {{ item.herb_name }}
+            </option>
+          </select>
+          <button class="btn btn-muted" @click="fetchRecords">Filter</button>
+        </div>
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Herb</th>
+            <th>Type</th>
+            <th>Before</th>
+            <th>After</th>
+            <th>Operator</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in records" :key="item.id">
+            <td>{{ (item.created_at || "").replace("T", " ").slice(0, 19) }}</td>
+            <td>{{ item.herb_name }}</td>
+            <td>{{ item.record_type }}</td>
+            <td>{{ item.before_quantity }}</td>
+            <td>{{ item.after_quantity }}</td>
+            <td>{{ item.operator_name || "-" }}</td>
+            <td>{{ item.remark || "-" }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>

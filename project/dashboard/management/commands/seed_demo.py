@@ -49,6 +49,7 @@ class Command(BaseCommand):
             ("user.delete", "删除用户", PermissionEntry.TYPE_API, "/api/users/<id>/"),
             ("role.view", "查看角色", PermissionEntry.TYPE_API, "/api/roles/"),
             ("permission.view", "查看权限", PermissionEntry.TYPE_API, "/api/permissions/"),
+            ("log.view", "查看日志", PermissionEntry.TYPE_API, "/api/logs/"),
         ]
         permissions = {}
         for code, name, p_type, path in permission_seed:

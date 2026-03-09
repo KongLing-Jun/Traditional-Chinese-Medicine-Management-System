@@ -22,7 +22,7 @@ async function onSubmit() {
     await auth.login(form.username, form.password);
     router.push({ name: "dashboard" });
   } catch (error) {
-    errorText.value = extractErrorMessage(error, "登录失败，请检查账号密码。");
+    errorText.value = extractErrorMessage(error, "Login failed. Please check username/password.");
   } finally {
     loading.value = false;
   }
@@ -33,21 +33,21 @@ async function onSubmit() {
   <div class="login-page">
     <div class="login-card card">
       <div class="login-header">
-        <h1>中医药管理系统</h1>
-        <p>使用 JWT 登录，按角色加载菜单与权限。</p>
+        <h1>TCM Management System</h1>
+        <p>Login with JWT and load role-based menus from backend.</p>
       </div>
       <form @submit.prevent="onSubmit" class="login-form">
         <label>
-          <span>用户名</span>
+          <span>Username</span>
           <input v-model.trim="form.username" autocomplete="username" />
         </label>
         <label>
-          <span>密码</span>
+          <span>Password</span>
           <input v-model="form.password" type="password" autocomplete="current-password" />
         </label>
         <p v-if="errorText" class="error-text">{{ errorText }}</p>
         <button class="btn btn-primary" type="submit" :disabled="loading">
-          {{ loading ? "登录中..." : "登录系统" }}
+          {{ loading ? "Signing in..." : "Sign In" }}
         </button>
       </form>
     </div>

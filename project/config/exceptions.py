@@ -9,18 +9,17 @@ def api_exception_handler(exc, context):
     if response is None:
         payload = {
             "code": "server_error",
-            "message": "服务器内部错误",
+            "message": "Internal server error.",
             "errors": {},
         }
         if settings.DEBUG:
             payload["debug"] = str(exc)
         return Response(payload, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    message = _extract_message(response.data)
     return Response(
         {
-            "code": response.status_code,
-            "message": message,
+            "code": f"http_{response.status_code}",
+            "message": _extract_message(response.data),
             "errors": response.data,
         },
         status=response.status_code,
@@ -38,4 +37,4 @@ def _extract_message(data):
             return str(first_value)
     if isinstance(data, list) and data:
         return str(data[0])
-    return "请求失败"
+    return "Request failed."
